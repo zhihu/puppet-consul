@@ -3,7 +3,7 @@
 # This class is called from consul
 #
 class consul::config {
-
+  $config_hash = $consul::config_hash
   file { $consul::config_dir:
     ensure => 'directory',
   } ->
