@@ -11,6 +11,7 @@ class consul::params {
   $ui_package_name   = 'consul_ui'
   $ui_package_ensure = 'latest'
   $version = '0.3.0'
+  $config_hash = {}
 
   case $::architecture {
     'x86_64', 'amd64': { $arch = 'amd64' }

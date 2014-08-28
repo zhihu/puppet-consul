@@ -47,7 +47,7 @@ class consul (
   $ui_package_ensure = $consul::params::ui_package_ensure,
   $config_dir        = '/etc/consul',
   $extra_options     = '',
-  $config_hash       = {},
+  $config_hash       = $consul::params::config_hash,
   $service_enable    = true,
   $service_ensure    = 'running',
   $init_style        = $consul::params::init_style,
