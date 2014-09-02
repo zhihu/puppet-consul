@@ -1,20 +1,24 @@
 #! /bin/sh
 ### BEGIN INIT INFO
 # Provides:          consul
-# Required-Start:    $local_fs $remote_fs
-# Required-Stop:     $local_fs $remote_fs
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      S 0 1 6
-# Short-Description: Consul service discovery framework
-# Description:       Healthchecks local services and registers
-#                    them in a central consul database.
+# Short-Description: Consul Service Discovery Platform
+# Description:       Consul is a tool for discovering and configuring services
+#                    in your infrastructure. It provides several key features:
+#                       * Service Discovery
+#                       * Health Checking
+#                       * Key/Valuye Store
+#                       * Multi Datacenter
 ### END INIT INFO
 
 # Do NOT "set -e"
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/usr/sbin:/usr/bin:/sbin:/bin:<%= scope.lookupvar('consul::bin_dir') %>
-DESC="Consul service discovery framework"
+DESC="Consul Service Discovery Platform"
 NAME=consul
 DAEMON=<%= scope.lookupvar('consul::bin_dir') %>/$NAME
 DAEMON_ARGS="agent -config-dir <%= scope.lookupvar('consul::config_dir') %> <%= scope.lookupvar('consul::extra_options') %>"
@@ -38,6 +42,14 @@ SCRIPTNAME=/etc/init.d/$NAME
 #
 # Function that starts the daemon/service
 #
+get_pid() {
+    cat "$PIDFILE"
+}
+
+is_running() {
+    [ -f "$PIDFILE" ] && ps `get_pid` > /dev/null 2>&1
+}
+
 do_start()
 {
     # Return
@@ -105,7 +117,7 @@ do_reload() {
     # restarting (for example, when it is sent a SIGHUP),
     # then implement that here.
     #
-    start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
+    start-stop-daemon --stop --signal HUP --quiet --pidfile $PIDFILE --name $NAME
     return 0
 }
 
@@ -126,36 +138,31 @@ case "$1" in
         2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
     esac
     ;;
-  #reload|force-reload)
+  reload)
     #
     # If do_reload() is not implemented then leave this commented out
     # and leave 'force-reload' as an alias for 'restart'.
     #
-    #log_daemon_msg "Reloading $DESC" "$NAME"
-    #do_reload
-    #log_end_msg $?
-    #;;
-  restart|force-reload)
-    #
-    # If the "reload" option is implemented then remove the
-    # 'force-reload' alias
-    #
+    log_daemon_msg "Reloading $DESC" "$NAME"
+    do_reload
+    log_end_msg $?
+    ;;
+  restart)
     log_daemon_msg "Restarting $DESC" "$NAME"
-    do_stop
-    case "$?" in
-      0|1)
-        do_start
-        case "$?" in
-            0) log_end_msg 0 ;;
-            1) log_end_msg 1 ;; # Old process is still running
-            *) log_end_msg 1 ;; # Failed to start
-        esac
-        ;;
-      *)
-        # Failed to stop
-        log_end_msg 1
-        ;;
-    esac
+    $0 stop
+    if is_running; then
+        echo "Unable to stop $NAME, will not attempt to start"
+        exit 1
+    fi
+    $0 start
+    ;;
+  status)
+    if is_running; then
+        echo "$NAME is running"
+    else
+        echo "$NAME is stopped"
+        exit 1
+    fi
     ;;
   *)
     #echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
@@ -164,4 +171,4 @@ case "$1" in
     ;;
 esac
 
-:
+exit 0
